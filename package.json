@@ -1,0 +1,19 @@
+{
+  "name": "piazza-tests",
+  "version": "1.0.0",
+  "main": "api.test.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "supertest": "^7.0.0"
+  }
+}
