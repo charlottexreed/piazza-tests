@@ -478,17 +478,31 @@ describe('API route integration testing for Piazza API', () => {
     });
     // TC 19. Nick browses all the expired messages on the Sports topic. These should be empty.
     it('should show no posts', async () => {
-        // const postData = {
-        //     "title": "I think peoplse should eat less fast food",
-        //     "topic": ["Sport"],
-        //     "body": "It is so unhealthy",
-        //     "expiry_minutes": -1,
-        // }
-        // const res1 = await request(BASE_URL)
-        //     .post(`/api/posts`)
-        //     .set('auth-token', authTokens['Nick'])
-        //     .send(postData);
-        // expect(res1.status).toBe(201);
+        // Have to create and delete a new post as the test will pass if there is nothing
+        // for any reason and therefore might be testing for something else
+        const postData = {
+            "title": "test post",
+            "topic": ["Sport"],
+            "body": "test post",
+            "expiry_minutes": -1,
+        }
+        const testRes1 = await request(BASE_URL)
+            .post(`/api/posts`)
+            .set('auth-token', authTokens['Nick'])
+            .send(postData);
+        expect(testRes1.status).toBe(201);
+        const testRes2 = await request(BASE_URL)
+            .get(`/api/posts/topic/sport?expired=true`)
+            .set('auth-token', authTokens['Nick']);
+        expect(testRes2.status).toBe(200);
+        expect(testRes2.body.length).toBe(1);
+        const deletionRes = await request(BASE_URL)
+            .delete(`/api/posts/${testRes2.body[0]._id}`)
+            .set('auth-token', authTokens['Nick']);
+        expect(deletionRes.status).toBe(200);
+        // End of the creation and deletion
+
+        // Test that there are no posts
         const res = await request(BASE_URL)
             .get(`/api/posts/topic/sport?expired=true`)
             .set('auth-token', authTokens['Nick']);
@@ -504,6 +518,9 @@ describe('API route integration testing for Piazza API', () => {
         expect(res.status).toBe(200);
         expect(res.body.user).toBe(userIds['Mary']);
     });
+
+    // TC 21. Nestor deletes her post on the Health topic, this should leave no posts on the Health topic
+
     // Deletes all the created users and their posts, interactions and comments
     afterAll(async () => {
         for (const user of testUsers) {
@@ -511,4 +528,5 @@ describe('API route integration testing for Piazza API', () => {
                 .set('auth-token', authTokens[user.username])
         }
     });
+
 });
