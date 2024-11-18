@@ -351,7 +351,39 @@ describe('API route integration testing for Piazza API', () => {
         expect(comment4Res.status).toBe(201);
 
     });
-    // TC 13. Nick browses all the available posts in the Tech topic; at this stage, he can see the number
+
+    // TC 13. Olga deletes her last comment with her token, the number of comments should be 3
+    it('should successfully delete the comment and show one less comment', async () => {
+        // Gets the post then the comment
+        const res = await request(BASE_URL)
+            .get(`/api/posts/topic/tech`)
+            .set('auth-token', authTokens['Olga']);
+        expect(res.status).toBe(200);
+        let marysPost;
+        for (const post of res.body) {
+            if(post.user === userIds['Mary']) {
+                marysPost = post;
+                break;}
+        }
+        const getRes1 = await request(BASE_URL)
+            .get(`/api/posts/${marysPost._id}/comments`)
+            .set('auth-token', authTokens['Olga'])
+        expect(getRes1.status).toBe(200);
+        olgasLastComment = getRes1.body[3];
+        // Deletes the comment and checks if there are 3 afterwards
+        const deleteRes = await request(BASE_URL)
+            .delete(`/api/posts/${marysPost._id}/comments/${olgasLastComment._id}`)
+            .set('auth-token', authTokens['Olga'])
+        expect(deleteRes.status).toBe(200);
+        const getRes2 = await request(BASE_URL)
+            .get(`/api/posts/${marysPost._id}/comments`)
+            .set('auth-token', authTokens['Olga'])
+        expect(getRes2.status).toBe(200);
+        expect(getRes2.body.length).toBe(3);
+    })
+
+
+    // TC 14. Nick browses all the available posts in the Tech topic; at this stage, he can see the number
     // of likes and dislikes of each post and the comments made.
     it('should show the likes and dislikes and also show that there are 4 comments present', async () => {
         // Gets Nick and Mary's post from the tech topic
@@ -376,7 +408,7 @@ describe('API route integration testing for Piazza API', () => {
         // Checks the amount of comments
         expect(marysPost.comments.length).toBe(4);
     });
-    // TC 14. Nestor posts a message on the Health topic with an expiration time using her token.
+    // TC 15. Nestor posts a message on the Health topic with an expiration time using her token.
     it('should post a message with Nestor\'s token under the Health topic that has an expiration time', async () => {
         // Simple post and submit with Nestor's auth token to Health topic
         const postData = {
@@ -396,7 +428,7 @@ describe('API route integration testing for Piazza API', () => {
         expect(differenceInMinutes).toBeGreaterThan(89);
         expect(differenceInMinutes).toBeLessThan(91);
     });
-    // TC 15. Mary browses all the available posts on the Health topic; at this stage, she can see only
+    // TC 16. Mary browses all the available posts on the Health topic; at this stage, she can see only
     // Nestor’s post.
     it('should get the posts in the Health topic which should be only 1 post', async () => {
         // Gets the posts under the health topic
@@ -407,7 +439,7 @@ describe('API route integration testing for Piazza API', () => {
         // Checks that there is only one
         expect(res.body.length).toBe(1);
     });
-    // TC 16. Mary posts a comment in Nestor’s message on the Health topic.
+    // TC 17. Mary posts a comment in Nestor’s message on the Health topic.
     it('should accept Mary\'s comment', async () => {
         // Gets Nestor's post from the health topic
         const res = await request(BASE_URL)
@@ -431,7 +463,7 @@ describe('API route integration testing for Piazza API', () => {
             .send(commentData);
         expect(commentRes.status).toBe(201);
     });
-    // TC 17. Mary dislikes Nestor’s message on the Health topic after the end of post-expiration time.
+    // TC 18. Mary dislikes Nestor’s message on the Health topic after the end of post-expiration time.
     // This should fail.
     it('should not accept the dislike on Nestor\'s post', async () => {
     // Gets Nestor's post from the health topic
@@ -466,7 +498,7 @@ describe('API route integration testing for Piazza API', () => {
         .send(dislikeData);
     expect(expiredInteractionRes.status).toBe(403);
     });
-    // TC 18. Nestor browses all the messages on the Health topic. There should be only one post (his
+    // TC 19. Nestor browses all the messages on the Health topic. There should be only one post (his
     // own) with one comment (Mary’s).
     it('should show 1 post and 1 comment in the health topic', async () => {
         const res = await request(BASE_URL)
@@ -476,7 +508,7 @@ describe('API route integration testing for Piazza API', () => {
         expect(res.body.length).toBe(1);
         expect(res.body[0].comments.length).toBe(1);
     });
-    // TC 19. Nick browses all the expired messages on the Sports topic. These should be empty.
+    // TC 20. Nick browses all the expired messages on the Sports topic. These should be empty.
     it('should show no posts', async () => {
         // Have to create and delete a new post as the test will pass if there is nothing
         // for any reason and therefore might be testing for something else
@@ -509,7 +541,7 @@ describe('API route integration testing for Piazza API', () => {
         expect(res.status).toBe(200);
         expect(res.body.length).toBe(0);
     });
-    // TC 20. Nestor queries for an active post with the highest interest (maximum number of likes and
+    // TC 21. Nestor queries for an active post with the highest interest (maximum number of likes and
     // dislikes) in the Tech topic. This should be Mary’s post.
     it('should show Mary\'s post when queried for the post with the highest interaction', async () => {
         const res = await request(BASE_URL)
@@ -519,8 +551,74 @@ describe('API route integration testing for Piazza API', () => {
         expect(res.body.user).toBe(userIds['Mary']);
     });
 
-    // TC 21. Nestor deletes her post on the Health topic, this should leave no posts on the Health topic
+    // TC 22. Nestor changes her dislike on Mary's post to a like and then changes
+    // her mind and removes it, the number of dislikes should drop while the likes stays the same
+    it('should successfully like the post and get rid of the like too', async () => {
+        // Gets Mary's post from the tech topic
+        const getRes1 = await request(BASE_URL)
+            .get(`/api/posts/topic/tech`)
+            .set('auth-token', authTokens['Nestor']);
+        expect(getRes1.status).toBe(200);
+        let marysPost;
+        for (const post of getRes1.body) {
+            if(post.user === userIds['Mary']) {
+                marysPost = post;
+                break;}
+        }
+        const getRes2 = await request(BASE_URL)
+            .get(`/api/posts/${marysPost._id}`)
+            .set('auth-token', authTokens['Nestor']);
+        expect(getRes2.status).toBe(200);
+        const previousLikeCount = getRes2.body.like_count;
+        const previousDislikeCount = getRes2.body.dislike_count;
+        // Adds Nestor's like to the post
+        const likeData = {
+            "type" : "like"
+        }
+        const likeRes = await request(BASE_URL)
+            .post(`/api/posts/${marysPost._id}`)
+            .set('auth-token', authTokens['Nestor'])
+            .send(likeData);
+        expect(likeRes.status).toBe(200);
+        const nestorsInteraction = likeRes.body.interaction;
+        // Deletes the interaction
+        const deleteLikeRes = await request(BASE_URL)
+            .delete(`/api/posts/${marysPost._id}/${nestorsInteraction._id}`)
+            .set('auth-token', authTokens['Nestor']);
+        expect(deleteLikeRes.status).toBe(200);
+        const getRes3 = await request(BASE_URL)
+            .get(`/api/posts/${marysPost._id}`)
+            .set('auth-token', authTokens['Nestor']);
+        expect(getRes3.status).toBe(200);
+        expect(getRes3.body.like_count).toBe(previousLikeCount);
+        expect(getRes3.body.dislike_count).toBe(previousDislikeCount - 1);
+    })
 
+    // TC 23. Nestor deletes her post on the Health topic, this should leave no posts on the Health topic
+    it('should successfully delete the post and show no posts in the health topic', async () => {
+        // Gets Nestor's post
+        const getRes1 = await request(BASE_URL)
+            .get(`/api/posts/topic/health`)
+            .set('auth-token', authTokens['Nestor']);
+        expect(getRes1.status).toBe(200);
+        let nestorsPost;
+        for (const post of getRes1.body) {
+            if(post.user === userIds['Nestor']) {
+                nestorsPost = post;
+                break;}
+        }
+        // Deletes the post
+        const deleteRes = await request(BASE_URL)
+            .delete(`/api/posts/${nestorsPost._id}`)
+            .set('auth-token', authTokens['Nestor']);
+        expect(deleteRes.status).toBe(200);
+        // Checks if there are no posts now
+        const getRes2 = await request(BASE_URL)
+            .get(`/api/posts/topic/health`)
+            .set('auth-token', authTokens['Nestor']);
+        expect(getRes2.status).toBe(200);
+        expect(getRes2.body.length).toBe(0);
+    })
     // Deletes all the created users and their posts, interactions and comments
     afterAll(async () => {
         for (const user of testUsers) {
@@ -528,5 +626,4 @@ describe('API route integration testing for Piazza API', () => {
                 .set('auth-token', authTokens[user.username])
         }
     });
-
 });
