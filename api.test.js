@@ -1,7 +1,7 @@
 const request = require('supertest');
 require('dotenv/config');
 
-const BASE_URL = process.env.BASE_URL;
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 // The user details used later in the tests
 const testUsers = [
@@ -551,8 +551,8 @@ describe('API route integration testing for Piazza API', () => {
         expect(res.body.user).toBe(userIds['Mary']);
     });
 
-    // TC 22. Nestor changes her dislike on Mary's post to a like and then changes
-    // her mind and removes it, the number of dislikes should drop while the likes stays the same
+    // TC 22. Nestor changes his dislike on Mary's post to a like and then changes
+    // his mind and removes it, the number of dislikes should drop while the likes stays the same
     it('should successfully like the post and get rid of the like too', async () => {
         // Gets Mary's post from the tech topic
         const getRes1 = await request(BASE_URL)
@@ -579,6 +579,7 @@ describe('API route integration testing for Piazza API', () => {
             .post(`/api/posts/${marysPost._id}`)
             .set('auth-token', authTokens['Nestor'])
             .send(likeData);
+        console.log(likeRes.body);
         expect(likeRes.status).toBe(200);
         const nestorsInteraction = likeRes.body.interaction;
         // Deletes the interaction
@@ -594,7 +595,7 @@ describe('API route integration testing for Piazza API', () => {
         expect(getRes3.body.dislike_count).toBe(previousDislikeCount - 1);
     })
 
-    // TC 23. Nestor deletes her post on the Health topic, this should leave no posts on the Health topic
+    // TC 23. Nestor deletes his post on the Health topic, this should leave no posts on the Health topic
     it('should successfully delete the post and show no posts in the health topic', async () => {
         // Gets Nestor's post
         const getRes1 = await request(BASE_URL)
